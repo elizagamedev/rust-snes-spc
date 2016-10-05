@@ -1,0 +1,15 @@
+[package]
+name = "snes-spc"
+version = "0.1.0"
+authors = ["Mathew Velasquez <mathewvq@gmail.com>"]
+build = "build.rs"
+links = "snes_spc"
+
+[dependencies]
+libc = "0.2"
+
+[build-dependencies]
+gcc = "0.3"
+
+[dev-dependencies]
+portaudio = "0.7.0"

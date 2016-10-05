@@ -1,0 +1,3 @@
+[submodule "snes_spc"]
+	path = snes_spc
+	url = https://github.com/mathewv/snes_spc.git
