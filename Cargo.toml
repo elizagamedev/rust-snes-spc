@@ -9,7 +9,7 @@ links = "snes_spc"
 libc = "0.2"
 
 [build-dependencies]
-gcc = "0.3"
+gcc = "=0.3.4"
 
 [dev-dependencies]
 portaudio = "0.7.0"
