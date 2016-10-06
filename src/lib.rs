@@ -38,23 +38,32 @@ impl Spc {
         }
     }
 
-    pub fn start_buffering(&mut self) {
-        assert!(!self.buffer_enabled);
+    pub fn enable_buffer(&mut self, val: bool) {
+        if self.buffer_enabled == val {
+            return;
+        }
+        unsafe {
+            let (cout, csize) = if val {
+                let cout = self.buffer.as_mut_ptr() as *mut Sample;
+                let csize = self.buffer.len() as libc::c_int;
+                (cout, csize)
+            } else {
+                let cout = mem::transmute::<*const Sample, *mut Sample>(ptr::null());
+                (cout, 0)
+            };
+            c::spc_set_output(self.cobj, cout, csize);
+        }
+        self.buffer_enabled = val;
+    }
+
+    pub fn flush_buffer(&mut self) -> &[Sample] {
+        assert!(self.buffer_enabled);
+        let sample_count = self.sample_count();
         unsafe {
             let cout = self.buffer.as_mut_ptr() as *mut Sample;
             let csize = self.buffer.len() as libc::c_int;
             c::spc_set_output(self.cobj, cout, csize);
         }
-        self.buffer_enabled = true;
-    }
-
-    pub fn finish_buffering(&mut self) -> &[Sample] {
-        let sample_count = self.sample_count();
-        unsafe {
-            let cout = mem::transmute::<*const Sample, *mut Sample>(ptr::null());
-            c::spc_set_output(self.cobj, cout, 0);
-        }
-        self.buffer_enabled = false;
         &self.buffer[0..sample_count]
     }
 
