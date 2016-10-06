@@ -1,6 +1,6 @@
 [package]
 name = "snes-spc"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["Mathew Velasquez <mathewvq@gmail.com>"]
 build = "build.rs"
 links = "snes_spc"

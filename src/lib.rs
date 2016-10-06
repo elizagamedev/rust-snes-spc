@@ -11,7 +11,9 @@ use std::slice;
 pub struct Spc {
     cobj: *mut c::SnesSpc,
     // pub out: Vec<Sample>,
-    buffer: Box<[Sample]>,
+    buffer_a: Box<[Sample]>,
+    buffer_b: Box<[Sample]>,
+    buffer_a_active: bool,
     buffer_enabled: bool,
 }
 
@@ -25,7 +27,9 @@ impl Spc {
             }
             Spc {
                 cobj: cobj,
-                buffer: vec![0; buffer_size].into_boxed_slice(),
+                buffer_a: vec![0; buffer_size].into_boxed_slice(),
+                buffer_b: vec![0; buffer_size].into_boxed_slice(),
+                buffer_a_active: true,
                 buffer_enabled: false,
             }
         }
@@ -42,10 +46,11 @@ impl Spc {
         if self.buffer_enabled == val {
             return;
         }
+        self.buffer_a_active = true;
         unsafe {
             let (cout, csize) = if val {
-                let cout = self.buffer.as_mut_ptr() as *mut Sample;
-                let csize = self.buffer.len() as libc::c_int;
+                let cout = self.buffer_a.as_mut_ptr() as *mut Sample;
+                let csize = self.buffer_a.len() as libc::c_int;
                 (cout, csize)
             } else {
                 let cout = mem::transmute::<*const Sample, *mut Sample>(ptr::null());
@@ -59,12 +64,21 @@ impl Spc {
     pub fn flush_buffer(&mut self) -> &[Sample] {
         assert!(self.buffer_enabled);
         let sample_count = self.sample_count();
+
+        let (result, active_buffer) = if self.buffer_a_active {
+            self.buffer_a_active = false;
+            (&self.buffer_a[0..sample_count], &mut self.buffer_b)
+        } else {
+            self.buffer_a_active = true;
+            (&self.buffer_b[0..sample_count], &mut self.buffer_a)
+        };
+
         unsafe {
-            let cout = self.buffer.as_mut_ptr() as *mut Sample;
-            let csize = self.buffer.len() as libc::c_int;
+            let cout = active_buffer.as_mut_ptr() as *mut Sample;
+            let csize = active_buffer.len() as libc::c_int;
             c::spc_set_output(self.cobj, cout, csize);
         }
-        &self.buffer[0..sample_count]
+        result
     }
 
     pub fn sample_count(&self) -> usize {
